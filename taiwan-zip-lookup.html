@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>台灣郵遞區號查詢</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --red: #C0392B; --red-dark: #96281B; --cream: #FAF6F0;
+    --warm-white: #FDF9F4; --ink: #1A1208; --ink-light: #3D2B1F;
+    --gold: #C8A951; --gray: #8C7B6E; --border: #D4C4B0;
+    --shadow: rgba(26,18,8,0.12);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--cream); font-family: 'Noto Serif TC', serif;
+    color: var(--ink); min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 40px 20px 60px; position: relative; overflow-x: hidden;
+  }
+  body::before {
+    content: ''; position: fixed; inset: 0;
+    background:
+      repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(192,57,43,0.04) 39px, rgba(192,57,43,0.04) 40px),
+      repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(192,57,43,0.04) 39px, rgba(192,57,43,0.04) 40px);
+    pointer-events: none; z-index: 0;
+  }
+  .wrapper { position: relative; z-index: 1; width: 100%; max-width: 680px; }
+
+  header { text-align: center; margin-bottom: 44px; animation: fadeDown 0.6s ease both; }
+  .stamp-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--red); color: #fff;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: 3px; padding: 6px 16px; margin-bottom: 20px;
+  }
+  .stamp-badge::before, .stamp-badge::after { content: '✦'; font-size: 8px; opacity: 0.7; }
+  h1 { font-size: clamp(32px, 6vw, 52px); font-weight: 900; line-height: 1.1; letter-spacing: -1px; }
+  h1 span { color: var(--red); }
+  .subtitle { margin-top: 10px; font-size: 14px; color: var(--gray); letter-spacing: 1px; }
+  .deco-line { display: flex; align-items: center; gap: 12px; margin: 20px auto 0; width: 200px; }
+  .deco-line::before, .deco-line::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  .deco-line span { color: var(--gold); font-size: 16px; }
+
+  .card {
+    background: var(--warm-white); border: 1.5px solid var(--border); border-radius: 2px;
+    padding: 36px 40px; box-shadow: 0 4px 24px var(--shadow), 0 1px 0 var(--gold) inset;
+    animation: fadeUp 0.6s 0.1s ease both; position: relative; overflow: hidden;
+  }
+  .card::before {
+    content: '郵'; position: absolute; top: -10px; right: 20px;
+    font-size: 120px; font-weight: 900; color: var(--red); opacity: 0.04;
+    line-height: 1; pointer-events: none;
+  }
+
+  .field-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 18px; }
+  label {
+    font-size: 11px; letter-spacing: 2px; font-weight: 600;
+    color: var(--gray); text-transform: uppercase; font-family: 'JetBrains Mono', monospace;
+  }
+  input[type="text"] {
+    width: 100%; padding: 13px 16px;
+    border: 1.5px solid var(--border); border-radius: 2px;
+    background: var(--cream); font-family: 'Noto Serif TC', serif;
+    font-size: 16px; color: var(--ink); transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  input[type="text"]:focus { outline: none; border-color: var(--red); box-shadow: 0 0 0 3px rgba(192,57,43,0.08); }
+  input[type="text"]::placeholder { color: #ccc; }
+
+  .hint {
+    font-size: 12px; color: var(--gray); margin-top: 6px;
+    line-height: 1.8; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.3px;
+  }
+  .hint code {
+    background: rgba(192,57,43,0.07); color: var(--red);
+    padding: 1px 5px; border-radius: 2px; font-size: 11px;
+  }
+
+  .btn-lookup {
+    width: 100%; padding: 15px; background: var(--red); color: #fff;
+    border: none; border-radius: 2px; font-family: 'Noto Serif TC', serif;
+    font-size: 16px; font-weight: 600; letter-spacing: 3px; cursor: pointer;
+    transition: background 0.2s, transform 0.1s; position: relative; overflow: hidden; margin-top: 8px;
+  }
+  .btn-lookup:hover { background: var(--red-dark); }
+  .btn-lookup:active { transform: scale(0.99); }
+  .btn-lookup:disabled { opacity: 0.6; cursor: not-allowed; }
+  .btn-lookup::after {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  .spinner {
+    display: inline-block; width: 18px; height: 18px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: #fff; border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    vertical-align: middle; margin-right: 8px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .result-area { margin-top: 28px; animation: fadeUp 0.4s ease both; }
+  .result-card {
+    border: 1.5px solid var(--border);
+    background: linear-gradient(135deg, #fff 0%, var(--cream) 100%);
+    padding: 28px 32px; position: relative; border-radius: 2px;
+  }
+  .result-card::before {
+    content: ''; position: absolute;
+    left: 0; top: 0; bottom: 0; width: 4px; background: var(--red);
+  }
+  .result-label {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    letter-spacing: 3px; color: var(--gray); margin-bottom: 8px; text-transform: uppercase;
+  }
+  .result-zip {
+    font-family: 'JetBrains Mono', monospace; font-size: 56px;
+    font-weight: 700; color: var(--red); letter-spacing: 6px; line-height: 1; margin-bottom: 12px;
+  }
+  .result-zip .sep { color: var(--border); font-weight: 400; }
+  .result-addr { font-size: 15px; color: var(--ink-light); line-height: 1.6; margin-bottom: 10px; }
+  .result-note {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    color: var(--gray); margin-bottom: 16px; letter-spacing: 0.5px;
+  }
+  .btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .copy-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 8px 18px; border: 1.5px solid var(--red); color: var(--red);
+    background: transparent; font-family: 'JetBrains Mono', monospace;
+    font-size: 12px; letter-spacing: 1px; cursor: pointer; border-radius: 2px; transition: all 0.2s;
+  }
+  .copy-btn:hover { background: var(--red); color: #fff; }
+  .copy-btn.copied { background: #27AE60; border-color: #27AE60; color: #fff; }
+
+  .error-msg {
+    padding: 16px 20px; border: 1.5px solid #E74C3C;
+    background: rgba(231,76,60,0.05); color: var(--red);
+    font-size: 14px; border-radius: 2px;
+    display: flex; align-items: flex-start; gap: 10px; line-height: 1.8;
+  }
+
+  .history-section { margin-top: 36px; animation: fadeUp 0.5s 0.2s ease both; }
+  .section-title {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    letter-spacing: 3px; color: var(--gray); text-transform: uppercase;
+    margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
+  }
+  .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  .history-list { display: flex; flex-direction: column; gap: 6px; }
+  .history-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 14px; background: var(--cream);
+    border: 1px solid var(--border); border-radius: 2px;
+    cursor: pointer; transition: all 0.15s; font-size: 13px;
+  }
+  .history-item:hover { border-color: var(--red); background: rgba(192,57,43,0.03); }
+  .history-zip { font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--red); font-size: 14px; }
+  .history-addr { color: var(--ink-light); flex: 1; margin: 0 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .history-time { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--gray); }
+
+  footer {
+    margin-top: 48px; text-align: center;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    color: var(--gray); letter-spacing: 1px; line-height: 1.8;
+    animation: fadeUp 0.6s 0.3s ease both;
+  }
+  footer a { color: var(--gray); }
+
+  @keyframes fadeDown { from { opacity: 0; transform: translateY(-16px); } to { opacity: 1; transform: none; } }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+
+  @media (max-width: 520px) {
+    .card { padding: 24px 20px; }
+    .result-zip { font-size: 38px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrapper">
+  <header>
+    <div class="stamp-badge">R.O.C. POSTAL CODE SYSTEM</div>
+    <h1>台灣<span>郵遞區號</span><br>精準查詢</h1>
+    <p class="subtitle">3＋3 六位數 · 串接中華郵政官方資料庫</p>
+    <div class="deco-line"><span>◈</span></div>
+  </header>
+
+  <div class="card">
+    <div class="field-group">
+      <label>完整地址</label>
+      <input type="text" id="addrInput"
+        placeholder="例：台北市大安區信義路四段1號"
+        autocomplete="off"
+        onkeydown="if(event.key==='Enter') lookup()" />
+      <div class="hint">
+        格式：<code>縣市</code> + <code>鄉鎮市區</code> + <code>路街名段</code> + <code>X號</code><br>
+        範例：<code>新北市板橋區縣民大道二段8號</code>、<code>台南市東區東門路一段200號</code>
+      </div>
+    </div>
+
+    <button class="btn-lookup" id="lookupBtn" onclick="lookup()">
+      查詢郵遞區號
+    </button>
+
+    <div id="resultArea" class="result-area" style="display:none;"></div>
+  </div>
+
+  <div class="history-section" id="historySection" style="display:none;">
+    <div class="section-title">查詢紀錄</div>
+    <div class="history-list" id="historyList"></div>
+  </div>
+
+  <footer>
+    資料來源：<a href="https://zip5.5432.tw" target="_blank">zip5.5432.tw</a>（中華郵政官方資料庫）<br>
+    即時查詢 · 3+3 六位數郵遞區號
+  </footer>
+</div>
+
+<script>
+const addrInput = document.getElementById('addrInput');
+const lookupBtn = document.getElementById('lookupBtn');
+const resultArea = document.getElementById('resultArea');
+const historySection = document.getElementById('historySection');
+const historyList = document.getElementById('historyList');
+let queryHistory = [];
+
+async function lookup() {
+  const addr = addrInput.value.trim();
+  if (!addr) {
+    show(`<div class="error-msg">⚠ 請輸入地址後再查詢</div>`);
+    return;
+  }
+
+  lookupBtn.disabled = true;
+  lookupBtn.innerHTML = `<span class="spinner"></span>查詢中...`;
+  resultArea.style.display = 'none';
+
+  try {
+    const url = `https://zip5.5432.tw/zip5json.py?adrs=${encodeURIComponent(addr)}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`伺服器回應錯誤 (${res.status})`);
+    const data = await res.json();
+
+    const zip6 = (data.zipcode6 || '').trim();
+    const zip5 = (data.zipcode || '').trim();
+    const adrs6 = (data.new_adrs6 || '').trim();
+    const adrs5 = (data.new_adrs || '').trim();
+    const ver6  = data.dataver6 || '';
+
+    if (zip6 && zip6.length === 6) {
+      // Success: 3+3 found
+      const z3a = zip6.slice(0,3), z3b = zip6.slice(3,6);
+      const displayAddr = adrs6.startsWith(zip6) ? adrs6.slice(6).trim() : (adrs6 || addr);
+      show(`
+        <div class="result-card">
+          <div class="result-label">POSTAL CODE · 3+3 郵遞區號</div>
+          <div class="result-zip">${z3a}<span class="sep">-</span>${z3b}</div>
+          <div class="result-addr">📍 ${escHtml(displayAddr || addr)}</div>
+          <div class="result-note">資料版本：${ver6 || '最新'} · 來源：中華郵政官方資料</div>
+          <div class="btn-row">
+            <button class="copy-btn" onclick="cp('${zip6}',this)">⎘ 複製 ${zip6}</button>
+            <button class="copy-btn" onclick="cp('${z3a}-${z3b}',this)">⎘ 複製 ${z3a}-${z3b}</button>
+            <button class="copy-btn" onclick="cp('${escAttr(zip6+' '+(displayAddr||addr))}',this)">⎘ 完整地址</button>
+          </div>
+        </div>`);
+      addHistory(z3a+'-'+z3b, zip6, displayAddr || addr);
+
+    } else if (zip5 && zip5.length >= 3 && adrs5 !== addr) {
+      // Fallback: 3+2 found
+      const z3 = zip5.slice(0,3), z2 = zip5.slice(3)||'00';
+      const displayAddr = adrs5.startsWith(zip5) ? adrs5.slice(zip5.length).trim() : (adrs5 || addr);
+      show(`
+        <div class="result-card">
+          <div class="result-label">POSTAL CODE · 3+2 郵遞區號（查無後三碼）</div>
+          <div class="result-zip" style="font-size:46px;">${z3}<span class="sep">-</span>${z2}</div>
+          <div class="result-addr">📍 ${escHtml(displayAddr || addr)}</div>
+          <div class="result-note">⚠ 此地址路段目前查無 3+3 後三碼，顯示 3+2 五位數</div>
+          <div class="btn-row">
+            <button class="copy-btn" onclick="cp('${zip5}',this)">⎘ 複製 ${zip5}</button>
+          </div>
+        </div>`);
+      addHistory(z3+'-'+z2, zip5, displayAddr || addr);
+
+    } else {
+      show(`<div class="error-msg">⚠ 查無此地址的郵遞區號。<br>請確認地址格式完整，例：<strong>台北市中正區忠孝東路一段1號</strong></div>`);
+    }
+
+  } catch(err) {
+    show(`<div class="error-msg">⚠ 查詢失敗：${escHtml(err.message)}<br>請確認網路連線後再試。</div>`);
+  } finally {
+    lookupBtn.disabled = false;
+    lookupBtn.innerHTML = '查詢郵遞區號';
+  }
+}
+
+function show(html) {
+  resultArea.style.display = 'block';
+  resultArea.innerHTML = html;
+}
+
+function cp(text, btn) {
+  navigator.clipboard.writeText(text).then(() => {
+    const orig = btn.innerHTML;
+    btn.classList.add('copied'); btn.innerHTML = '✓ 已複製！';
+    setTimeout(() => { btn.classList.remove('copied'); btn.innerHTML = orig; }, 2000);
+  });
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function escAttr(s) {
+  return String(s).replace(/'/g,"\\'");
+}
+
+function addHistory(display, raw, addr) {
+  const time = new Date().toLocaleTimeString('zh-TW', {hour:'2-digit', minute:'2-digit'});
+  queryHistory.unshift({ display, raw, addr, time });
+  if (queryHistory.length > 6) queryHistory.pop();
+  renderHistory();
+}
+
+function renderHistory() {
+  if (!queryHistory.length) { historySection.style.display = 'none'; return; }
+  historySection.style.display = 'block';
+  historyList.innerHTML = '';
+  queryHistory.forEach(h => {
+    const div = document.createElement('div');
+    div.className = 'history-item';
+    div.title = '點擊複製區號';
+    div.innerHTML = `
+      <span class="history-zip">${escHtml(h.display)}</span>
+      <span class="history-addr">${escHtml(h.addr)}</span>
+      <span class="history-time">${h.time}</span>`;
+    div.onclick = () => {
+      navigator.clipboard.writeText(h.raw);
+      div.style.borderColor = 'var(--gold)';
+      setTimeout(() => div.style.borderColor = '', 900);
+    };
+    historyList.appendChild(div);
+  });
+}
+
+addrInput.focus();
+</script>
+</body>
+</html>
