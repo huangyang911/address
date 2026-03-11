@@ -301,6 +301,7 @@ async function lookup() {
             <button class="copy-btn" onclick="cp('${zip6}',this)">⎘ 複製 ${zip6}</button>
             <button class="copy-btn" onclick="cp('${z3a}-${z3b}',this)">⎘ 複製 ${z3a}-${z3b}</button>
             <button class="copy-btn" onclick="cp('${escAttr(zip6+' '+(displayAddr||addr))}',this)">⎘ 完整地址</button>
+            <a class="copy-btn" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(displayAddr||addr)}" target="_blank" rel="noopener">🗺 Google Maps</a>
           </div>
         </div>`);
       addHistory(z3a+'-'+z3b, zip6, displayAddr || addr);
@@ -317,6 +318,7 @@ async function lookup() {
           <div class="result-note">⚠ 此地址路段目前查無 3+3 後三碼，顯示 3+2 五位數</div>
           <div class="btn-row">
             <button class="copy-btn" onclick="cp('${zip5}',this)">⎘ 複製 ${zip5}</button>
+            <a class="copy-btn" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(displayAddr||addr)}" target="_blank" rel="noopener">🗺 Google Maps</a>
           </div>
         </div>`);
       addHistory(z3+'-'+z2, zip5, displayAddr || addr);
