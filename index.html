@@ -12,6 +12,39 @@
     --gold: #C8A951; --gray: #8C7B6E; --border: #D4C4B0;
     --shadow: rgba(26,18,8,0.12);
   }
+
+  /* 暗色主題 */
+  [data-theme="dark"] {
+    --red: #E05C4B; --red-dark: #C0392B; --cream: #1A1410;
+    --warm-white: #221C16; --ink: #F0E6D8; --ink-light: #C8B9A8;
+    --gold: #C8A951; --gray: #8C7B6E; --border: #3D2B1F;
+    --shadow: rgba(0,0,0,0.4);
+  }
+  [data-theme="dark"] body::before {
+    background:
+      repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(224,92,75,0.04) 39px, rgba(224,92,75,0.04) 40px),
+      repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(224,92,75,0.04) 39px, rgba(224,92,75,0.04) 40px);
+  }
+  [data-theme="dark"] input[type="text"] { background: var(--cream); }
+  [data-theme="dark"] .result-card {
+    background: linear-gradient(135deg, #2A211A 0%, var(--cream) 100%);
+  }
+
+  /* 主題切換器 */
+  .theme-switcher {
+    position: fixed; top: 16px; right: 16px; z-index: 999;
+    display: flex; gap: 2px;
+    background: var(--warm-white); border: 1.5px solid var(--border);
+    border-radius: 4px; padding: 3px; box-shadow: 0 2px 8px var(--shadow);
+  }
+  .theme-btn {
+    display: flex; align-items: center; justify-content: center;
+    width: 30px; height: 30px; border-radius: 3px;
+    border: none; background: transparent; cursor: pointer;
+    color: var(--gray); font-size: 15px; transition: all 0.15s;
+  }
+  .theme-btn:hover { background: rgba(192,57,43,0.1); color: var(--red); }
+  .theme-btn.active { background: var(--red); color: #fff; }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
     background: var(--cream); font-family: 'Noto Serif TC', serif;
@@ -179,6 +212,11 @@
 </style>
 </head>
 <body>
+<div class="theme-switcher">
+  <button class="theme-btn" id="themeAuto" title="系統預設" onclick="setTheme('auto')">⬡</button>
+  <button class="theme-btn" id="themeLight" title="亮色" onclick="setTheme('light')">☀</button>
+  <button class="theme-btn" id="themeDark" title="暗色" onclick="setTheme('dark')">☾</button>
+</div>
 <div class="wrapper">
   <header>
     <div class="stamp-badge">R.O.C. POSTAL CODE SYSTEM</div>
@@ -344,6 +382,31 @@ function renderHistory() {
 }
 
 addrInput.focus();
+
+// ── 主題切換 ──
+function setTheme(mode) {
+  localStorage.setItem('theme', mode);
+  applyTheme(mode);
+  document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
+  const map = { auto: 'themeAuto', light: 'themeLight', dark: 'themeDark' };
+  document.getElementById(map[mode])?.classList.add('active');
+}
+
+function applyTheme(mode) {
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const isDark = mode === 'dark' || (mode === 'auto' && prefersDark);
+  document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+}
+
+(function initTheme() {
+  const saved = localStorage.getItem('theme') || 'auto';
+  setTheme(saved);
+  // 系統色彩偏好改變時重新套用（僅 auto 模式有效）
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+    const cur = localStorage.getItem('theme') || 'auto';
+    if (cur === 'auto') applyTheme('auto');
+  });
+})();
 </script>
 </body>
 </html>
