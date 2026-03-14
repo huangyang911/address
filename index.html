@@ -741,39 +741,18 @@
       const textElement = area.querySelector('.en-addr-text');
 
       try {
-        // [最終解決方案]：實作 Proxy 備援機制，確保在 GitHub Pages 穩定運作
-        const apiTarget = 'https://zipgo.tw/api/normalize';
-        const proxies = [
-          `https://corsproxy.io/?url=${encodeURIComponent(apiTarget)}`,
-          `https://api.allorigins.win/raw?url=${encodeURIComponent(apiTarget)}` // [推測] 備援 Proxy
-        ];
+        // 呼叫 Serverless Function（需部署至 Vercel 才能運作，GitHub Pages 不支援）
+        const response = await fetch(`/api/translate?address=${encodeURIComponent(addr)}`);
+        if (!response.ok) throw new Error('翻譯 API 不可用（請確認部署至 Vercel）');
+        const result = await response.json();
 
-        let result = null;
-        let lastError = '';
-
-        for (const proxyUrl of proxies) {
-          try {
-            const response = await fetch(proxyUrl, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ address: addr })
-            });
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            result = await response.json();
-            if (result && result.en) break; // 成功取得翻譯
-          } catch (e) {
-            lastError = e.message;
-            continue; // 嘗試下一個 Proxy
-          }
-        }
-
-        if (result && result.en) {
+        if (result && result.success && result.data && result.data.english) {
           area.style.display = 'block';
-          textElement.innerText = result.en;
+          textElement.innerText = result.data.english;
           textElement.style.cursor = 'pointer';
           textElement.title = "點擊複製";
-          textElement.onclick = () => cp(result.en, textElement);
-        } else throw new Error(lastError || '翻譯介面無回應或格式錯誤');
+          textElement.onclick = () => cp(result.data.english, textElement);
+        } else throw new Error(result.error || '回傳格式異常');
       } catch (err) {
         area.style.display = 'block';
         textElement.innerText = `⚠ 翻譯失敗: 請確認 Proxy 伺服器狀態 (${err.message})`;
