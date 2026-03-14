@@ -1,6 +1,7 @@
 {
     "name": "antigravity-postal-proxy",
     "version": "1.0.0",
+    "type": "module",
     "scripts": {
         "dev": "node --watch server.js"
     },
