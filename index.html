@@ -741,7 +741,7 @@
       const textElement = area.querySelector('.en-addr-text');
 
       try {
-        // [解決方案]：使用公開的 CORS Proxy (allorigins) 繞過 GitHub Pages        // [最終解決方案]：實作 Proxy 備援機制，確保在 GitHub Pages 穩定運作
+        // [最終解決方案]：實作 Proxy 備援機制，確保在 GitHub Pages 穩定運作
         const apiTarget = 'https://zipgo.tw/api/normalize';
         const proxies = [
           `https://corsproxy.io/?url=${encodeURIComponent(apiTarget)}`,
