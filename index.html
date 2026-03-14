@@ -742,12 +742,15 @@
 
       try {
         // [解決方案]：使用公開的 CORS Proxy (allorigins) 繞過 GitHub Pages 靜態限制
-        const targetUrl = `https://zipgo.tw/api/normalize?address=${encodeURIComponent(addr)}`;
-        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
+        // [解決方案]：使用支援 POST 的 CORS Proxy (corsproxy.io) 繞過 GitHub Pages 限制
+        const proxyUrl = `https://corsproxy.io/?https://zipgo.tw/api/normalize`;
         
-        const response = await fetch(proxyUrl);
-        const wrapper = await response.json(); // allorigins 回傳 { contents: "..." }
-        const result = JSON.parse(wrapper.contents);
+        const response = await fetch(proxyUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ address: addr })
+        });
+        const result = await response.json();
 
         if (result && result.en) {
           area.style.display = 'block';
