@@ -741,11 +741,8 @@
       const textElement = area.querySelector('.en-addr-text');
 
       try {
-        // [重點配置]：這裡請更換為您部署在 Vercel 上的真實網址
-        // 若在本地測試 (localhost)，會自動呼叫本地的 server.js (8080 port)
-        const proxyBaseUrl = window.location.origin; // [優化] 直接使用當前 Origin
-
-        const response = await fetch(`${proxyBaseUrl}/api/translate?address=${encodeURIComponent(addr)}`);
+        // [優化]：優先使用 Vercel Serverless 提供的 API
+        const response = await fetch(`/api/translate?address=${encodeURIComponent(addr)}`);
         const result = await response.json();
 
         if (result.success) {
