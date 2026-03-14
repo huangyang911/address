@@ -741,17 +741,21 @@
       const textElement = area.querySelector('.en-addr-text');
 
       try {
-        // [優化]：優先使用 Vercel Serverless 提供的 API
-        const response = await fetch(`/api/translate?address=${encodeURIComponent(addr)}`);
-        const result = await response.json();
+        // [解決方案]：使用公開的 CORS Proxy (allorigins) 繞過 GitHub Pages 靜態限制
+        const targetUrl = `https://zipgo.tw/api/normalize?address=${encodeURIComponent(addr)}`;
+        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
+        
+        const response = await fetch(proxyUrl);
+        const wrapper = await response.json(); // allorigins 回傳 { contents: "..." }
+        const result = JSON.parse(wrapper.contents);
 
-        if (result.success) {
+        if (result && result.en) {
           area.style.display = 'block';
-          textElement.innerText = result.data.english;
+          textElement.innerText = result.en;
           textElement.style.cursor = 'pointer';
           textElement.title = "點擊複製";
-          textElement.onclick = () => cp(result.data.english, textElement);
-        } else throw new Error(result.error);
+          textElement.onclick = () => cp(result.en, textElement);
+        } else throw new Error(result.error || '規格不符');
       } catch (err) {
         area.style.display = 'block';
         textElement.innerText = `⚠ 翻譯失敗: 請確認 Proxy 伺服器狀態 (${err.message})`;
