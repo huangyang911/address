@@ -1,414 +1,811 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>台灣郵遞區號查詢</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
-<style>
-  :root {
-    --red: #C0392B; --red-dark: #96281B; --cream: #FAF6F0;
-    --warm-white: #FDF9F4; --ink: #1A1208; --ink-light: #3D2B1F;
-    --gold: #C8A951; --gray: #8C7B6E; --border: #D4C4B0;
-    --shadow: rgba(26,18,8,0.12);
-  }
-
-  /* 暗色主題 */
-  [data-theme="dark"] {
-    --red: #E05C4B; --red-dark: #C0392B; --cream: #1A1410;
-    --warm-white: #221C16; --ink: #F0E6D8; --ink-light: #C8B9A8;
-    --gold: #C8A951; --gray: #8C7B6E; --border: #3D2B1F;
-    --shadow: rgba(0,0,0,0.4);
-  }
-  [data-theme="dark"] body::before {
-    background:
-      repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(224,92,75,0.04) 39px, rgba(224,92,75,0.04) 40px),
-      repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(224,92,75,0.04) 39px, rgba(224,92,75,0.04) 40px);
-  }
-  [data-theme="dark"] input[type="text"] { background: var(--cream); }
-  [data-theme="dark"] .result-card {
-    background: linear-gradient(135deg, #2A211A 0%, var(--cream) 100%);
-  }
-
-  /* 主題切換器 */
-  .theme-switcher {
-    position: fixed; top: 16px; right: 16px; z-index: 999;
-    display: flex; gap: 2px;
-    background: var(--warm-white); border: 1.5px solid var(--border);
-    border-radius: 4px; padding: 3px; box-shadow: 0 2px 8px var(--shadow);
-  }
-  .theme-btn {
-    display: flex; align-items: center; justify-content: center;
-    width: 30px; height: 30px; border-radius: 3px;
-    border: none; background: transparent; cursor: pointer;
-    color: var(--gray); font-size: 15px; transition: all 0.15s;
-  }
-  .theme-btn:hover { background: rgba(192,57,43,0.1); color: var(--red); }
-  .theme-btn.active { background: var(--red); color: #fff; }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body {
-    background: var(--cream); font-family: 'Noto Serif TC', serif;
-    color: var(--ink); min-height: 100vh;
-    display: flex; flex-direction: column; align-items: center;
-    padding: 40px 20px 60px; position: relative; overflow-x: hidden;
-  }
-  body::before {
-    content: ''; position: fixed; inset: 0;
-    background:
-      repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(192,57,43,0.04) 39px, rgba(192,57,43,0.04) 40px),
-      repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(192,57,43,0.04) 39px, rgba(192,57,43,0.04) 40px);
-    pointer-events: none; z-index: 0;
-  }
-  .wrapper { position: relative; z-index: 1; width: 100%; max-width: 680px; }
-
-  header { text-align: center; margin-bottom: 44px; animation: fadeDown 0.6s ease both; }
-  .stamp-badge {
-    display: inline-flex; align-items: center; gap: 8px;
-    background: var(--red); color: #fff;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 11px; letter-spacing: 3px; padding: 6px 16px; margin-bottom: 20px;
-  }
-  .stamp-badge::before, .stamp-badge::after { content: '✦'; font-size: 8px; opacity: 0.7; }
-  h1 { font-size: clamp(32px, 6vw, 52px); font-weight: 900; line-height: 1.1; letter-spacing: -1px; }
-  h1 span { color: var(--red); }
-  .subtitle { margin-top: 10px; font-size: 14px; color: var(--gray); letter-spacing: 1px; }
-  .deco-line { display: flex; align-items: center; gap: 12px; margin: 20px auto 0; width: 200px; }
-  .deco-line::before, .deco-line::after { content: ''; flex: 1; height: 1px; background: var(--border); }
-  .deco-line span { color: var(--gold); font-size: 16px; }
-
-  .card {
-    background: var(--warm-white); border: 1.5px solid var(--border); border-radius: 2px;
-    padding: 36px 40px; box-shadow: 0 4px 24px var(--shadow), 0 1px 0 var(--gold) inset;
-    animation: fadeUp 0.6s 0.1s ease both; position: relative; overflow: hidden;
-  }
-  .card::before {
-    content: '郵'; position: absolute; top: -10px; right: 20px;
-    font-size: 120px; font-weight: 900; color: var(--red); opacity: 0.04;
-    line-height: 1; pointer-events: none;
-  }
-
-  .field-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 18px; }
-  label {
-    font-size: 11px; letter-spacing: 2px; font-weight: 600;
-    color: var(--gray); text-transform: uppercase; font-family: 'JetBrains Mono', monospace;
-  }
-  input[type="text"] {
-    width: 100%; padding: 13px 16px;
-    border: 1.5px solid var(--border); border-radius: 2px;
-    background: var(--cream); font-family: 'Noto Serif TC', serif;
-    font-size: 16px; color: var(--ink); transition: border-color 0.2s, box-shadow 0.2s;
-  }
-  input[type="text"]:focus { outline: none; border-color: var(--red); box-shadow: 0 0 0 3px rgba(192,57,43,0.08); }
-  input[type="text"]::placeholder { color: #ccc; }
-
-  .hint {
-    font-size: 12px; color: var(--gray); margin-top: 6px;
-    line-height: 1.8; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.3px;
-  }
-  .hint code {
-    background: rgba(192,57,43,0.07); color: var(--red);
-    padding: 1px 5px; border-radius: 2px; font-size: 11px;
-  }
-
-  .btn-lookup {
-    width: 100%; padding: 15px; background: var(--red); color: #fff;
-    border: none; border-radius: 2px; font-family: 'Noto Serif TC', serif;
-    font-size: 16px; font-weight: 600; letter-spacing: 3px; cursor: pointer;
-    transition: background 0.2s, transform 0.1s; position: relative; overflow: hidden; margin-top: 8px;
-  }
-  .btn-lookup:hover { background: var(--red-dark); }
-  .btn-lookup:active { transform: scale(0.99); }
-  .btn-lookup:disabled { opacity: 0.6; cursor: not-allowed; }
-  .btn-lookup::after {
-    content: ''; position: absolute; inset: 0;
-    background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 60%);
-    pointer-events: none;
-  }
-
-  .spinner {
-    display: inline-block; width: 18px; height: 18px;
-    border: 2px solid rgba(255,255,255,0.3);
-    border-top-color: #fff; border-radius: 50%;
-    animation: spin 0.7s linear infinite;
-    vertical-align: middle; margin-right: 8px;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  .result-area { margin-top: 28px; animation: fadeUp 0.4s ease both; }
-  .result-card {
-    border: 1.5px solid var(--border);
-    background: linear-gradient(135deg, #fff 0%, var(--cream) 100%);
-    padding: 28px 32px; position: relative; border-radius: 2px;
-  }
-  .result-card::before {
-    content: ''; position: absolute;
-    left: 0; top: 0; bottom: 0; width: 4px; background: var(--red);
-  }
-  .result-label {
-    font-family: 'JetBrains Mono', monospace; font-size: 10px;
-    letter-spacing: 3px; color: var(--gray); margin-bottom: 8px; text-transform: uppercase;
-  }
-  .result-zip {
-    font-family: 'JetBrains Mono', monospace; font-size: 56px;
-    font-weight: 700; color: var(--red); letter-spacing: 6px; line-height: 1; margin-bottom: 12px;
-  }
-  .result-zip .sep { color: var(--border); font-weight: 400; }
-  .result-addr { font-size: 15px; color: var(--ink-light); line-height: 1.6; margin-bottom: 10px; }
-  .result-note {
-    font-family: 'JetBrains Mono', monospace; font-size: 11px;
-    color: var(--gray); margin-bottom: 16px; letter-spacing: 0.5px;
-  }
-  .btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
-  .copy-btn {
-    display: inline-flex; align-items: center; gap: 8px;
-    padding: 8px 18px; border: 1.5px solid var(--red); color: var(--red);
-    background: transparent; font-family: 'JetBrains Mono', monospace;
-    font-size: 12px; letter-spacing: 1px; cursor: pointer; border-radius: 2px; transition: all 0.2s;
-  }
-  .copy-btn:hover { background: var(--red); color: #fff; }
-  .copy-btn.copied { background: #27AE60; border-color: #27AE60; color: #fff; }
-
-  .error-msg {
-    padding: 16px 20px; border: 1.5px solid #E74C3C;
-    background: rgba(231,76,60,0.05); color: var(--red);
-    font-size: 14px; border-radius: 2px;
-    display: flex; align-items: flex-start; gap: 10px; line-height: 1.8;
-  }
-
-  .history-section { margin-top: 36px; animation: fadeUp 0.5s 0.2s ease both; }
-  .section-title {
-    font-family: 'JetBrains Mono', monospace; font-size: 10px;
-    letter-spacing: 3px; color: var(--gray); text-transform: uppercase;
-    margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
-  }
-  .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
-  .history-list { display: flex; flex-direction: column; gap: 6px; }
-  .history-item {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 10px 14px; background: var(--cream);
-    border: 1px solid var(--border); border-radius: 2px;
-    cursor: pointer; transition: all 0.15s; font-size: 13px;
-  }
-  .history-item:hover { border-color: var(--red); background: rgba(192,57,43,0.03); }
-  .history-zip { font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--red); font-size: 14px; }
-  .history-addr { color: var(--ink-light); flex: 1; margin: 0 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .history-time { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--gray); }
-
-  footer {
-    margin-top: 48px; text-align: center;
-    font-family: 'JetBrains Mono', monospace; font-size: 11px;
-    color: var(--gray); letter-spacing: 1px; line-height: 1.8;
-    animation: fadeUp 0.6s 0.3s ease both;
-  }
-  footer a { color: var(--gray); }
-
-  @keyframes fadeDown { from { opacity: 0; transform: translateY(-16px); } to { opacity: 1; transform: none; } }
-  @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
-
-  @media (max-width: 520px) {
-    .card { padding: 24px 20px; }
-    .result-zip { font-size: 38px; }
-  }
-</style>
-</head>
-<body>
-<div class="theme-switcher">
-  <button class="theme-btn" id="themeAuto" title="系統預設" onclick="setTheme('auto')">⬡</button>
-  <button class="theme-btn" id="themeLight" title="亮色" onclick="setTheme('light')">☀</button>
-  <button class="theme-btn" id="themeDark" title="暗色" onclick="setTheme('dark')">☾</button>
-</div>
-<div class="wrapper">
-  <header>
-    <div class="stamp-badge">R.O.C. POSTAL CODE SYSTEM</div>
-    <h1>台灣<span>郵遞區號</span><br>精準查詢</h1>
-    <p class="subtitle">3＋3 六位數 · 串接中華郵政官方資料庫</p>
-    <div class="deco-line"><span>◈</span></div>
-  </header>
-
-  <div class="card">
-    <div class="field-group">
-      <label>完整地址</label>
-      <input type="text" id="addrInput"
-        placeholder="例：台北市大安區信義路四段1號"
-        autocomplete="off"
-        onkeydown="if(event.key==='Enter') lookup()" />
-      <div class="hint">
-        格式：<code>縣市</code> + <code>鄉鎮市區</code> + <code>路街名段</code> + <code>X號</code><br>
-        範例：<code>新北市板橋區縣民大道二段8號</code>、<code>台南市東區東門路一段200號</code>
-      </div>
-    </div>
-
-    <button class="btn-lookup" id="lookupBtn" onclick="lookup()">
-      查詢郵遞區號
-    </button>
-
-    <div id="resultArea" class="result-area" style="display:none;"></div>
-  </div>
-
-  <div class="history-section" id="historySection" style="display:none;">
-    <div class="section-title">查詢紀錄</div>
-    <div class="history-list" id="historyList"></div>
-  </div>
-
-  <footer>
-    資料來源：<a href="https://zip5.5432.tw" target="_blank">zip5.5432.tw</a>（中華郵政官方資料庫）<br>
-    即時查詢 · 3+3 六位數郵遞區號
-  </footer>
-</div>
-
-<script>
-const addrInput = document.getElementById('addrInput');
-const lookupBtn = document.getElementById('lookupBtn');
-const resultArea = document.getElementById('resultArea');
-const historySection = document.getElementById('historySection');
-const historyList = document.getElementById('historyList');
-let queryHistory = [];
-
-async function lookup() {
-  const addr = addrInput.value.trim();
-  if (!addr) {
-    show(`<div class="error-msg">⚠ 請輸入地址後再查詢</div>`);
-    return;
-  }
-
-  lookupBtn.disabled = true;
-  lookupBtn.innerHTML = `<span class="spinner"></span>查詢中...`;
-  resultArea.style.display = 'none';
-
-  try {
-    const url = `https://zip5.5432.tw/zip5json.py?adrs=${encodeURIComponent(addr)}`;
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`伺服器回應錯誤 (${res.status})`);
-    const data = await res.json();
-
-    const zip6 = (data.zipcode6 || '').trim();
-    const zip5 = (data.zipcode || '').trim();
-    const adrs6 = (data.new_adrs6 || '').trim();
-    const adrs5 = (data.new_adrs || '').trim();
-    const ver6  = data.dataver6 || '';
-
-    if (zip6 && zip6.length === 6) {
-      // Success: 3+3 found
-      const z3a = zip6.slice(0,3), z3b = zip6.slice(3,6);
-      const displayAddr = adrs6.startsWith(zip6) ? adrs6.slice(6).trim() : (adrs6 || addr);
-      show(`
-        <div class="result-card">
-          <div class="result-label">POSTAL CODE · 3+3 郵遞區號</div>
-          <div class="result-zip">${z3a}<span class="sep">-</span>${z3b}</div>
-          <div class="result-addr">📍 ${escHtml(displayAddr || addr)}</div>
-          <div class="result-note">資料版本：${ver6 || '最新'} · 來源：中華郵政官方資料</div>
-          <div class="btn-row">
-            <button class="copy-btn" onclick="cp('${zip6}',this)">⎘ 複製 ${zip6}</button>
-            <button class="copy-btn" onclick="cp('${z3a}-${z3b}',this)">⎘ 複製 ${z3a}-${z3b}</button>
-            <button class="copy-btn" onclick="cp('${escAttr(zip6+' '+(displayAddr||addr))}',this)">⎘ 完整地址</button>
-            <a class="copy-btn" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(displayAddr||addr)}" target="_blank" rel="noopener">🗺 Google Maps</a>
-          </div>
-        </div>`);
-      addHistory(z3a+'-'+z3b, zip6, displayAddr || addr);
-
-    } else if (zip5 && zip5.length >= 3 && adrs5 !== addr) {
-      // Fallback: 3+2 found
-      const z3 = zip5.slice(0,3), z2 = zip5.slice(3)||'00';
-      const displayAddr = adrs5.startsWith(zip5) ? adrs5.slice(zip5.length).trim() : (adrs5 || addr);
-      show(`
-        <div class="result-card">
-          <div class="result-label">POSTAL CODE · 3+2 郵遞區號（查無後三碼）</div>
-          <div class="result-zip" style="font-size:46px;">${z3}<span class="sep">-</span>${z2}</div>
-          <div class="result-addr">📍 ${escHtml(displayAddr || addr)}</div>
-          <div class="result-note">⚠ 此地址路段目前查無 3+3 後三碼，顯示 3+2 五位數</div>
-          <div class="btn-row">
-            <button class="copy-btn" onclick="cp('${zip5}',this)">⎘ 複製 ${zip5}</button>
-            <a class="copy-btn" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(displayAddr||addr)}" target="_blank" rel="noopener">🗺 Google Maps</a>
-          </div>
-        </div>`);
-      addHistory(z3+'-'+z2, zip5, displayAddr || addr);
-
-    } else {
-      show(`<div class="error-msg">⚠ 查無此地址的郵遞區號。<br>請確認地址格式完整，例：<strong>台北市中正區忠孝東路一段1號</strong></div>`);
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>台灣郵遞區號與英譯查詢 | 快速精準的地址工具</title>
+  <meta name="description" content="提供台灣 3+3 與 3+2 郵遞區號快速查詢，支援批量處理與地址英譯功能。">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;900&family=JetBrains+Mono:wght@400;700&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --red: #C0392B;
+      --red-dark: #96281B;
+      --cream: #FAF6F0;
+      --warm-white: #FDF9F4;
+      --ink: #1A1208;
+      --ink-light: #3D2B1F;
+      --gold: #C8A951;
+      --gray: #8C7B6E;
+      --border: #D4C4B0;
+      --shadow: rgba(26, 18, 8, 0.12);
     }
 
-  } catch(err) {
-    show(`<div class="error-msg">⚠ 查詢失敗：${escHtml(err.message)}<br>請確認網路連線後再試。</div>`);
-  } finally {
-    lookupBtn.disabled = false;
-    lookupBtn.innerHTML = '查詢郵遞區號';
-  }
-}
+    [data-theme="dark"] {
+      --red: #E05C4B;
+      --red-dark: #C0392B;
+      --cream: #1A1410;
+      --warm-white: #221C16;
+      --ink: #F0E6D8;
+      --ink-light: #C8B9A8;
+      --gold: #C8A951;
+      --gray: #8C7B6E;
+      --border: #3D2B1F;
+      --shadow: rgba(0, 0, 0, 0.5);
+    }
 
-function show(html) {
-  resultArea.style.display = 'block';
-  resultArea.innerHTML = html;
-}
+    [data-theme="dark"] body::before {
+      background: repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(224, 92, 75, 0.04) 39px, rgba(224, 92, 75, 0.04) 40px),
+        repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(224, 92, 75, 0.04) 39px, rgba(224, 92, 75, 0.04) 40px);
+    }
 
-function cp(text, btn) {
-  navigator.clipboard.writeText(text).then(() => {
-    const orig = btn.innerHTML;
-    btn.classList.add('copied'); btn.innerHTML = '✓ 已複製！';
-    setTimeout(() => { btn.classList.remove('copied'); btn.innerHTML = orig; }, 2000);
-  });
-}
+    [data-theme="dark"] input[type="text"],
+    [data-theme="dark"] textarea {
+      background: var(--cream);
+    }
 
-function escHtml(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
-function escAttr(s) {
-  return String(s).replace(/'/g,"\\'");
-}
+    [data-theme="dark"] .result-card {
+      background: linear-gradient(135deg, #2A211A 0%, var(--cream) 100%);
+    }
 
-function addHistory(display, raw, addr) {
-  const time = new Date().toLocaleTimeString('zh-TW', {hour:'2-digit', minute:'2-digit'});
-  queryHistory.unshift({ display, raw, addr, time });
-  if (queryHistory.length > 6) queryHistory.pop();
-  renderHistory();
-}
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
 
-function renderHistory() {
-  if (!queryHistory.length) { historySection.style.display = 'none'; return; }
-  historySection.style.display = 'block';
-  historyList.innerHTML = '';
-  queryHistory.forEach(h => {
-    const div = document.createElement('div');
-    div.className = 'history-item';
-    div.title = '點擊複製區號';
-    div.innerHTML = `
-      <span class="history-zip">${escHtml(h.display)}</span>
-      <span class="history-addr">${escHtml(h.addr)}</span>
-      <span class="history-time">${h.time}</span>`;
-    div.onclick = () => {
-      navigator.clipboard.writeText(h.raw);
-      div.style.borderColor = 'var(--gold)';
-      setTimeout(() => div.style.borderColor = '', 900);
-    };
-    historyList.appendChild(div);
-  });
-}
+    body {
+      background: var(--cream);
+      font-family: 'Noto Serif TC', serif;
+      color: var(--ink);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 20px 60px;
+      position: relative;
+      overflow-x: hidden;
+    }
 
-addrInput.focus();
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(192, 57, 43, 0.04) 39px, rgba(192, 57, 43, 0.04) 40px), repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(192, 57, 43, 0.04) 39px, rgba(192, 57, 43, 0.04) 40px);
+      pointer-events: none;
+      z-index: 0;
+    }
 
-// ── 主題切換 ──
-function setTheme(mode) {
-  localStorage.setItem('theme', mode);
-  applyTheme(mode);
-  document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
-  const map = { auto: 'themeAuto', light: 'themeLight', dark: 'themeDark' };
-  document.getElementById(map[mode])?.classList.add('active');
-}
+    .theme-switcher {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      z-index: 999;
+      display: flex;
+      gap: 2px;
+      background: var(--warm-white);
+      border: 1.5px solid var(--border);
+      border-radius: 4px;
+      padding: 3px;
+      box-shadow: 0 2px 8px var(--shadow);
+    }
 
-function applyTheme(mode) {
-  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-  const isDark = mode === 'dark' || (mode === 'auto' && prefersDark);
-  document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
-}
+    .theme-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 30px;
+      height: 30px;
+      border-radius: 3px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      color: var(--gray);
+      font-size: 15px;
+      transition: all 0.15s;
+    }
 
-(function initTheme() {
-  const saved = localStorage.getItem('theme') || 'auto';
-  setTheme(saved);
-  // 系統色彩偏好改變時重新套用（僅 auto 模式有效）
-  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-    const cur = localStorage.getItem('theme') || 'auto';
-    if (cur === 'auto') applyTheme('auto');
-  });
-})();
-</script>
+    .theme-btn:hover {
+      background: rgba(192, 57, 43, 0.1);
+      color: var(--red);
+    }
+
+    .theme-btn.active {
+      background: var(--red);
+      color: #fff;
+    }
+
+    .wrapper {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 680px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 44px;
+      animation: fadeDown 0.6s ease both;
+    }
+
+    .stamp-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--red);
+      color: #fff;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 3px;
+      padding: 6px 16px;
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      font-size: clamp(32px, 6vw, 52px);
+      font-weight: 900;
+      line-height: 1.1;
+      letter-spacing: -1px;
+    }
+
+    h1 span {
+      color: var(--red);
+    }
+
+    .subtitle {
+      margin-top: 10px;
+      font-size: 14px;
+      color: var(--gray);
+      letter-spacing: 1px;
+    }
+
+    .deco-line {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 20px auto 0;
+      width: 200px;
+    }
+
+    .deco-line::before,
+    .deco-line::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .deco-line span {
+      color: var(--gold);
+      font-size: 16px;
+    }
+
+    .card {
+      background: var(--warm-white);
+      border: 1.5px solid var(--border);
+      border-radius: 2px;
+      padding: 36px 40px;
+      box-shadow: 0 4px 24px var(--shadow), 0 1px 0 var(--gold) inset;
+      animation: fadeUp 0.6s 0.1s ease both;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: '郵';
+      position: absolute;
+      top: -10px;
+      right: 20px;
+      font-size: 120px;
+      font-weight: 900;
+      color: var(--red);
+      opacity: 0.04;
+      line-height: 1;
+      pointer-events: none;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 24px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+    }
+
+    .tab-btn {
+      background: none;
+      border: none;
+      padding: 6px 12px;
+      font-family: 'Noto Serif TC', serif;
+      font-size: 14px;
+      color: var(--gray);
+      cursor: pointer;
+      border-radius: 4px;
+      transition: all 0.2s;
+    }
+
+    .tab-btn.active {
+      color: var(--red);
+      font-weight: 600;
+      background: rgba(192, 57, 43, 0.05);
+    }
+
+    .field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 18px;
+    }
+
+    label {
+      font-size: 11px;
+      letter-spacing: 2px;
+      font-weight: 600;
+      color: var(--gray);
+      text-transform: uppercase;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    input[type="text"],
+    textarea {
+      width: 100%;
+      padding: 13px 16px;
+      border: 1.5px solid var(--border);
+      border-radius: 2px;
+      background: var(--cream);
+      font-family: 'Noto Serif TC', serif;
+      font-size: 16px;
+      color: var(--ink);
+      transition: border-color 0.2s;
+    }
+
+    input[type="text"]:focus,
+    textarea:focus {
+      outline: none;
+      border-color: var(--red);
+    }
+
+    textarea {
+      height: 120px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      resize: none;
+    }
+
+    .hint {
+      font-size: 12px;
+      color: var(--gray);
+      margin-top: 6px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .hint code {
+      background: rgba(192, 57, 43, 0.07);
+      color: var(--red);
+      padding: 1px 5px;
+      border-radius: 2px;
+    }
+
+    .btn-lookup {
+      width: 100%;
+      padding: 15px;
+      background: var(--red);
+      color: #fff;
+      border: none;
+      border-radius: 2px;
+      font-family: 'Noto Serif TC', serif;
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: 3px;
+      cursor: pointer;
+      transition: background 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-lookup:hover {
+      background: var(--red-dark);
+    }
+
+    .btn-lookup:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .result-area {
+      margin-top: 28px;
+      animation: fadeUp 0.4s ease both;
+    }
+
+    .result-card {
+      border: 1.5px solid var(--border);
+      background: linear-gradient(135deg, #fff 0%, var(--cream) 100%);
+      padding: 28px 32px;
+      position: relative;
+      border-radius: 2px;
+      margin-bottom: 10px;
+    }
+
+    .result-card::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      background: var(--red);
+    }
+
+    .result-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 3px;
+      color: var(--gray);
+      margin-bottom: 8px;
+    }
+
+    .result-zip {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 56px;
+      font-weight: 700;
+      color: var(--red);
+      letter-spacing: 6px;
+      line-height: 1;
+      margin-bottom: 12px;
+    }
+
+    .result-addr {
+      font-size: 15px;
+      color: var(--ink-light);
+      margin-bottom: 10px;
+    }
+
+    .result-note {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--gray);
+      margin-bottom: 16px;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .copy-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 18px;
+      border: 1.5px solid var(--red);
+      color: var(--red);
+      background: transparent;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      cursor: pointer;
+      border-radius: 2px;
+      transition: all 0.2s;
+      text-decoration: none;
+    }
+
+    .copy-btn:hover {
+      background: var(--red);
+      color: #fff;
+    }
+
+    .copy-btn.copied {
+      background: #27AE60;
+      border-color: #27AE60;
+      color: #fff;
+    }
+
+    .error-msg {
+      padding: 16px 20px;
+      border: 1.5px solid #E74C3C;
+      background: rgba(231, 76, 60, 0.05);
+      color: var(--red);
+      font-size: 14px;
+      border-radius: 2px;
+    }
+
+    .bulk-progress {
+      margin-top: 20px;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+
+    .progress-bar .fill {
+      height: 100%;
+      background: var(--red);
+      width: 0%;
+      transition: width 0.3s;
+    }
+
+    .progress-text {
+      font-size: 11px;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--gray);
+      text-align: center;
+    }
+
+    .bulk-results {
+      margin-top: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .bulk-row {
+      padding: 10px;
+      background: var(--warm-white);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      flex-wrap: wrap;
+    }
+
+    .bulk-row.ok {
+      border-left: 3px solid #27AE60;
+    }
+
+    .bulk-row.err {
+      border-left: 3px solid #E74C3C;
+    }
+
+    .history-section {
+      margin-top: 36px;
+      animation: fadeUp 0.5s 0.2s ease both;
+      width: 100%;
+    }
+
+    .section-title {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 3px;
+      color: var(--gray);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .history-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .history-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 14px;
+      background: var(--cream);
+      border: 1px solid var(--border);
+      font-size: 13px;
+    }
+
+    footer {
+      margin-top: 48px;
+      text-align: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--gray);
+    }
+
+    @keyframes fadeDown {
+      from {
+        opacity: 0;
+        transform: translateY(-16px);
+      }
+
+      to {
+        opacity: 1;
+        transform: none;
+      }
+    }
+
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(12px);
+      }
+
+      to {
+        opacity: 1;
+        transform: none;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="theme-switcher">
+    <button class="theme-btn" id="themeAuto" onclick="setTheme('auto')">⬡</button>
+    <button class="theme-btn" id="themeLight" onclick="setTheme('light')">☀</button>
+    <button class="theme-btn" id="themeDark" onclick="setTheme('dark')">☾</button>
+  </div>
+  <div class="wrapper">
+    <header>
+      <div class="stamp-badge">R.O.C. POSTAL CODE</div>
+      <h1>台灣<span>郵遞區號</span>查詢</h1>
+      <div class="deco-line"><span>◈</span></div>
+    </header>
+
+    <div class="card">
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('single')">單筆查詢</button>
+        <button class="tab-btn" onclick="switchTab('bulk')">批量查詢</button>
+      </div>
+
+      <div id="singleMode">
+        <div class="field-group">
+          <label>完整中文地址</label>
+          <input type="text" id="addrInput" placeholder="例：台北市大安區信義路四段1號"
+            onkeydown="if(event.key==='Enter') lookup()" />
+        </div>
+        <button class="btn-lookup" id="lookupBtn" onclick="lookup()">查詢郵遞區號</button>
+      </div>
+
+      <div id="bulkMode" style="display:none;">
+        <div class="field-group">
+          <label>多筆地址 (每行一筆)</label>
+          <textarea id="bulkInput" placeholder="台北市大安區信義路四段1號&#10;新北市板橋區縣民大道二段8號"></textarea>
+        </div>
+        <button class="btn-lookup" id="bulkBtn" onclick="bulkLookup()">開始批量查詢</button>
+        <div id="bulkProgress" class="bulk-progress" style="display:none;">
+          <div class="progress-bar">
+            <div id="progressFill" class="fill"></div>
+          </div>
+          <div id="progressText" class="progress-text">準備中...</div>
+        </div>
+      </div>
+
+      <div id="resultArea" class="result-area" style="display:none;"></div>
+    </div>
+
+    <div class="history-section" id="historySection" style="display:none;">
+      <div class="section-title">
+        <span>查詢紀錄</span>
+        <div style="margin-left:auto; display:flex; gap:8px;">
+          <button class="copy-btn" style="padding:4px 8px; font-size:10px;" onclick="clearHistory()">清除</button>
+        </div>
+      </div>
+      <div class="history-list" id="historyList"></div>
+    </div>
+    <footer>Powered by Antigravity Architecture</footer>
+  </div>
+
+  <script>
+    const resultArea = document.getElementById('resultArea');
+    let queryHistory = JSON.parse(localStorage.getItem('zipQueryHistory') || '[]');
+
+    function switchTab(mode) {
+      document.getElementById('singleMode').style.display = mode === 'single' ? 'block' : 'none';
+      document.getElementById('bulkMode').style.display = mode === 'bulk' ? 'block' : 'none';
+      document.querySelectorAll('.tab-btn').forEach((btn, idx) => btn.classList.toggle('active', (idx === 0 && mode === 'single') || (idx === 1 && mode === 'bulk')));
+      resultArea.innerHTML = ''; resultArea.style.display = 'none';
+    }
+
+    async function lookup() {
+      const addr = document.getElementById('addrInput').value.trim();
+      if (!addr) return;
+      if (addr.length < 5) {
+        resultArea.style.display = 'block';
+        resultArea.innerHTML = `<div class="error-msg">⚠ 請輸入更完整的地址（至少 5 個字）。</div>`;
+        return;
+      }
+      const btn = document.getElementById('lookupBtn');
+      btn.disabled = true; btn.innerHTML = `<span class="spinner"></span>查詢中...`;
+
+      try {
+        const res = await fetch(`https://zip5.5432.tw/zip5json.py?adrs=${encodeURIComponent(addr)}`);
+        const data = await res.json();
+        const zip6 = (data.zipcode6 || '').trim();
+        const zip5 = (data.zipcode || '').trim();
+
+        let displayHtml = '';
+        if (zip6.length === 6) {
+          const z3a = zip6.slice(0, 3), z3b = zip6.slice(3, 6);
+          displayHtml = buildResultCard(z3a, z3b, addr, zip6);
+          addHistory(`${z3a}-${z3b}`, addr);
+        } else if (zip5.length >= 3) {
+          const z3 = zip5.slice(0, 3), z2 = zip5.slice(3) || '00';
+          displayHtml = buildResultCard(z3, z2, addr, zip5, true);
+          addHistory(`${z3}-${z2}`, addr);
+        } else {
+          displayHtml = `<div class="error-msg">⚠ 查無此地址。</div>`;
+        }
+
+        resultArea.style.display = 'block';
+        resultArea.innerHTML = displayHtml;
+      } catch (err) {
+        resultArea.style.display = 'block';
+        resultArea.innerHTML = `<div class="error-msg">⚠ 網路錯誤</div>`;
+      } finally {
+        btn.disabled = false; btn.innerHTML = '查詢郵遞區號';
+      }
+    }
+
+    async function bulkLookup() {
+      const input = document.getElementById('bulkInput').value.trim();
+      const addresses = input.split('\n').map(a => a.trim()).filter(a => a);
+      if (!addresses.length) return;
+
+      document.getElementById('bulkBtn').disabled = true;
+      document.getElementById('bulkProgress').style.display = 'block';
+      resultArea.innerHTML = '<div class="bulk-results" id="bulkResults"></div>';
+      resultArea.style.display = 'block';
+      const container = document.getElementById('bulkResults');
+
+      let count = 0;
+      for (const addr of addresses) {
+        count++;
+        document.getElementById('progressFill').style.width = `${(count / addresses.length) * 100}%`;
+        document.getElementById('progressText').innerText = `正在查詢 (${count}/${addresses.length})`;
+
+        try {
+          const res = await fetch(`https://zip5.5432.tw/zip5json.py?adrs=${encodeURIComponent(addr)}`);
+          const data = await res.json();
+          const zip = data.zipcode6 || data.zipcode || 'N/A';
+          const isOk = zip !== 'N/A' && zip.length >= 3;
+
+          const row = document.createElement('div');
+          row.className = `bulk-row ${isOk ? 'ok' : 'err'}`;
+          row.innerHTML = `
+            <div style="width:100%; display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+              <span>📍 ${escHtml(addr)}</span>
+              <div style="display:flex; gap:8px; align-items:center;">
+                <strong style="color:var(--red);">${zip}</strong>
+                ${isOk ? `<button class="copy-btn" style="padding:2px 6px; font-size:10px; border-color:var(--gold); color:var(--gold);" onclick="translateAddr('${escAttr(addr)}', this)">英譯</button>` : ''}
+              </div>
+            </div>`;
+          container.appendChild(row);
+          if (isOk) addHistory(zip, addr);
+        } catch (e) { }
+        await new Promise(r => setTimeout(r, 200));
+      }
+      document.getElementById('bulkBtn').disabled = false;
+      document.getElementById('progressText').innerText = '完成！';
+    }
+
+    function buildResultCard(p1, p2, addr, fullZip, isWarn = false) {
+      return `
+        <div class="result-card">
+          <div class="result-label">POSTAL CODE · ${isWarn ? '3+2' : '3+3'} 郵遞區號</div>
+          <div class="result-zip">${p1}<span style="color:var(--border);font-weight:400;">-</span>${p2}</div>
+          <div class="result-addr">📍 ${escHtml(addr)}</div>
+          <div class="btn-row">
+            <button class="copy-btn" onclick="cp('${fullZip}',this)">⎘ 複製區號</button>
+            <button class="copy-btn" style="border-color:var(--gold); color:var(--gold);" onclick="translateAddr('${escAttr(addr)}', this)">🌎 英文地址翻譯</button>
+          </div>
+        </div>`;
+    }
+
+    // --- 核心：與 Proxy 溝通的英譯邏輯 ---
+    async function translateAddr(addr, btn) {
+      const originalText = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = `<span class="spinner" style="border-top-color:var(--gold); width:12px; height:12px;"></span>...`;
+
+      const parentCard = btn.closest('.result-card') || btn.closest('.bulk-row');
+      let area = parentCard.querySelector('.english-addr-area');
+
+      if (!area) {
+        area = document.createElement('div');
+        area.className = 'english-addr-area result-note';
+        area.style.cssText = 'margin-top:12px; padding:10px; background:rgba(200,169,81,0.1); border-left:2px solid var(--gold); color:var(--ink-light); width:100%; display:none;';
+        area.innerHTML = `
+          <div style="font-size:10px; color:var(--gold); margin-bottom:4px;">ENGLISH ADDRESS</div>
+          <div class="en-addr-text" style="font-family:'JetBrains Mono', monospace; font-size:13px; line-height:1.4;"></div>`;
+        parentCard.appendChild(area);
+      }
+
+      const textElement = area.querySelector('.en-addr-text');
+
+      try {
+        // [重點配置]：這裡請更換為您部署在 Vercel 上的真實網址
+        // 若在本地測試 (localhost)，會自動呼叫本地的 server.js (8080 port)
+        const proxyBaseUrl = window.location.origin; // [優化] 直接使用當前 Origin
+
+        const response = await fetch(`${proxyBaseUrl}/api/translate?address=${encodeURIComponent(addr)}`);
+        const result = await response.json();
+
+        if (result.success) {
+          area.style.display = 'block';
+          textElement.innerText = result.data.english;
+          textElement.style.cursor = 'pointer';
+          textElement.title = "點擊複製";
+          textElement.onclick = () => cp(result.data.english, textElement);
+        } else throw new Error(result.error);
+      } catch (err) {
+        area.style.display = 'block';
+        textElement.innerText = `⚠ 翻譯失敗: 請確認 Proxy 伺服器狀態 (${err.message})`;
+        textElement.style.color = 'var(--red)';
+      } finally {
+        btn.disabled = false; btn.innerHTML = originalText;
+      }
+    }
+
+    function cp(text, btn) {
+      navigator.clipboard.writeText(text).then(() => {
+        const orig = btn.innerHTML;
+        btn.style.color = '#27AE60'; btn.innerHTML = '✓ 已複製！';
+        setTimeout(() => { btn.style.color = ''; btn.innerHTML = orig; }, 2000);
+      });
+    }
+
+    function addHistory(zip, addr) {
+      if (queryHistory.length > 0 && queryHistory[0].addr === addr) return;
+      queryHistory.unshift({ zip, addr });
+      if (queryHistory.length > 10) queryHistory.pop();
+      localStorage.setItem('zipQueryHistory', JSON.stringify(queryHistory));
+      renderHistory();
+    }
+
+    function renderHistory() {
+      const sec = document.getElementById('historySection');
+      const list = document.getElementById('historyList');
+      if (!queryHistory.length) { sec.style.display = 'none'; return; }
+      sec.style.display = 'block'; list.innerHTML = '';
+      queryHistory.forEach(h => {
+        const div = document.createElement('div');
+        div.className = 'history-item';
+        div.innerHTML = `<span style="color:var(--red); font-weight:700;">${h.zip}</span><span style="color:var(--ink-light);">${h.addr}</span>`;
+        list.appendChild(div);
+      });
+    }
+
+    function clearHistory() { queryHistory = []; localStorage.removeItem('zipQueryHistory'); renderHistory(); }
+    function escHtml(s) { return String(s).replace(/[&<>'"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": "&#39;", '"': '&quot;' }[c])); }
+    function escAttr(s) { return String(s).replace(/'/g, "\\'"); }
+
+    // 主題切換
+    function setTheme(m) {
+      localStorage.setItem('theme', m);
+      document.documentElement.setAttribute('data-theme', (m === 'dark' || (m === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches)) ? 'dark' : 'light');
+      document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById({ auto: 'themeAuto', light: 'themeLight', dark: 'themeDark' }[m]).classList.add('active');
+    }
+    (function () { setTheme(localStorage.getItem('theme') || 'auto'); renderHistory(); })();
+  </script>
 </body>
+
 </html>
