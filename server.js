@@ -7,7 +7,7 @@ const PORT = process.env.PORT || 8080;
 
 app.use(cors());
 app.use(express.json());
-app.use(express.static('.')); // 提供根目錄下的靜態檔案
+app.use(express.static('public')); // 提供 public 目錄下的靜態檔案
 
 app.get('/api/translate', async (req, res) => {
     const { address } = req.query;
